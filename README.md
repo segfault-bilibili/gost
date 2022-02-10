@@ -1,4 +1,4 @@
-gost - GO Simple Tunnel
+(Modified for Android Shadowsocks Plugin) gost - GO Simple Tunnel
 ======
 
 ### GO语言实现的安全隧道
