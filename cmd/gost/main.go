@@ -43,7 +43,7 @@ func init() {
 	pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", os.Getenv("SS_REMOTE_PORT"))
 
 	os.Args = append(os.Args, "-L")
-	os.Args = append(os.Args, fmt.Sprintf("ss+tcp://rc4-md5:gost@[%s]:%s", localHost, localPort))
+	os.Args = append(os.Args, fmt.Sprintf("ss+tcp://none@[%s]:%s", localHost, localPort))
 	os.Args = append(os.Args, strings.Split(pluginOptions, " ")...)
 
 	flag.Var(&services, "L", "service list")
