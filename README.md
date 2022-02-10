@@ -1,3 +1,5 @@
+*(Modified for Android Shadowsocks Plugin)*
+
 # GO Simple Tunnel
 
 ### GO语言实现的安全隧道
