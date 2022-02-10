@@ -9,7 +9,9 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"strings"
 
+	"github.com/go-gost/gost/utils"
 	"github.com/go-gost/core/logger"
 	"github.com/go-gost/x/config"
 	"github.com/go-gost/x/config/parsing"
@@ -32,11 +34,24 @@ var (
 
 func init() {
 	var printVersion bool
+	var fastOpen     bool
+
+	localHost := os.Getenv("SS_LOCAL_HOST")
+	localPort := os.Getenv("SS_LOCAL_PORT")
+	pluginOptions := os.Getenv("SS_PLUGIN_OPTIONS")
+	pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_HOST", os.Getenv("SS_REMOTE_HOST"))
+	pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", os.Getenv("SS_REMOTE_PORT"))
+
+	os.Args = append(os.Args, "-L")
+	os.Args = append(os.Args, fmt.Sprintf("ss+tcp://rc4-md5:gost@[%s]:%s", localHost, localPort))
+	os.Args = append(os.Args, strings.Split(pluginOptions, " ")...)
 
 	flag.Var(&services, "L", "service list")
 	flag.Var(&nodes, "F", "chain node list")
 	flag.StringVar(&cfgFile, "C", "", "configure file")
-	flag.BoolVar(&printVersion, "V", false, "print version")
+	flag.BoolVar(&utils.VpnMode, "V", false, "VPN Mode")
+	flag.BoolVar(&fastOpen, "fast-open", false, "fast Open TCP")
+	flag.BoolVar(&printVersion, "PV", false, "print version")
 	flag.StringVar(&outputFormat, "O", "", "output format, one of yaml|json format")
 	flag.BoolVar(&debug, "D", false, "debug mode")
 	flag.StringVar(&apiAddr, "api", "", "api service address")
@@ -48,6 +63,12 @@ func init() {
 			version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		os.Exit(0)
 	}
+
+	if localHost == "" || localPort == "" {
+		fmt.Fprintln(os.Stderr, "Can only be used in the shadowsocks plugin.")
+		os.Exit(1)
+	}
+	utils.Init()
 
 	log = xlogger.NewLogger()
 	logger.SetDefault(log)
