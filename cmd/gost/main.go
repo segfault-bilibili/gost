@@ -9,6 +9,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"encoding/base64"
+	"encoding/json"
 
 	_ "net/http/pprof"
 
@@ -34,12 +36,76 @@ func init() {
 	localHost := os.Getenv("SS_LOCAL_HOST")
 	localPort := os.Getenv("SS_LOCAL_PORT")
 	pluginOptions := os.Getenv("SS_PLUGIN_OPTIONS")
-	pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_HOST", os.Getenv("SS_REMOTE_HOST"))
-	pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", os.Getenv("SS_REMOTE_PORT"))
 
-	os.Args = append(os.Args, "-L")
-	os.Args = append(os.Args, fmt.Sprintf("ss+tcp://none@[%s]:%s", localHost, localPort))
-	os.Args = append(os.Args, strings.Split(pluginOptions, " ")...)
+	splitted := strings.Split(pluginOptions, " ")
+	var encoded string = ""
+	for _, subString := range splitted {
+		if strings.HasPrefix(subString, "CFGBLOB=") {
+			encoded = subString[len("CFGBLOB="):]
+			break
+		}
+	}
+	if encoded != "" {
+		jsonBytes, err := base64.StdEncoding.WithPadding('_').DecodeString(encoded)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "base64 decode error:", err)
+			os.Exit(2)
+		}
+		type cfgblob struct {
+			CmdArgs	[][]string
+			DataDir	string
+			Files	map[string]string
+		}
+		var cfg cfgblob
+		err = json.Unmarshal([]byte(jsonBytes), &cfg)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "json unmarshal error:", err)
+			os.Exit(2)
+		}
+		for _, oneOrTwoArgs := range cfg.CmdArgs {
+			for _, arg := range oneOrTwoArgs {
+				arg = strings.ReplaceAll(arg, "#SS_LOCAL_HOST", localHost)
+				arg = strings.ReplaceAll(arg, "#SS_LOCAL_PORT", localPort)
+				os.Args = append(os.Args, arg)
+			}
+		}
+		err = os.Chdir(cfg.DataDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "chdir error:", err)
+			os.Exit(2)
+		}
+		os.Mkdir("gost_files", 0700)
+		err = os.Chdir("gost_files")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "chdir error:", err)
+			os.Exit(2)
+		}
+		existing, err := os.ReadDir(".")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "readdir error:", err)
+			os.Exit(2)
+		}
+		for _, dirEntry := range existing {
+			err = os.Remove(dirEntry.Name())
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "cannot remove existing file, error:", err)
+			}
+		}
+		for fileName, fileData := range cfg.Files {
+			err = os.WriteFile(fileName, []byte(fileData), 0600)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "writefile error:", err)
+				os.Exit(2)
+			}
+		}
+	} else {
+		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_HOST", os.Getenv("SS_REMOTE_HOST"))
+		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", os.Getenv("SS_REMOTE_PORT"))
+
+		os.Args = append(os.Args, "-L")
+		os.Args = append(os.Args, fmt.Sprintf("ss+tcp://none@[%s]:%s", localHost, localPort))
+		os.Args = append(os.Args, strings.Split(pluginOptions, " ")...)
+	}
 
 	flag.Var(&baseCfg.route.ChainNodes, "F", "forward address, can make a forward chain")
 	flag.Var(&baseCfg.route.ServeNodes, "L", "listen address, can listen on multiple ports (required)")
