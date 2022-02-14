@@ -74,7 +74,9 @@ func init() {
 				os.Args = append(os.Args, arg)
 			}
 		}
-		err = os.Chdir(cfg.DataDir)
+		myDataDir := strings.ReplaceAll(cfg.DataDir, "com.github.shadowsocks.plugin.gost", "com.github.shadowsocks")
+		os.MkdirAll(myDataDir, 0700)
+		err = os.Chdir(myDataDir)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "chdir error:", err)
 			os.Exit(2)
