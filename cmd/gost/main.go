@@ -66,6 +66,10 @@ func init() {
 		}
 		for _, oneOrTwoArgs := range cfg.CmdArgs {
 			for _, arg := range oneOrTwoArgs {
+				if strings.HasPrefix(arg, "\"") && strings.HasSuffix(arg, "\"") {
+					// strip quotes to avoid crash
+					arg = arg[1:(len(arg)-2)]
+				}
 				arg = strings.ReplaceAll(arg, "#SS_HOST", "#SS_REMOTE_HOST")
 				arg = strings.ReplaceAll(arg, "#SS_PORT", "#SS_REMOTE_PORT")
 				arg = strings.ReplaceAll(arg, "#SS_REMOTE_HOST", remoteHost)
