@@ -40,6 +40,8 @@ func init() {
 
 	localHost := os.Getenv("SS_LOCAL_HOST")
 	localPort := os.Getenv("SS_LOCAL_PORT")
+	remoteHost := os.Getenv("SS_REMOTE_HOST")
+	remotePort := os.Getenv("SS_REMOTE_PORT")
 	pluginOptions := os.Getenv("SS_PLUGIN_OPTIONS")
 
 	splitted := strings.Split(pluginOptions, " ")
@@ -69,6 +71,10 @@ func init() {
 		}
 		for _, oneOrTwoArgs := range cfg.CmdArgs {
 			for _, arg := range oneOrTwoArgs {
+				arg = strings.ReplaceAll(arg, "#SS_HOST", "#SS_REMOTE_HOST")
+				arg = strings.ReplaceAll(arg, "#SS_PORT", "#SS_REMOTE_PORT")
+				arg = strings.ReplaceAll(arg, "#SS_REMOTE_HOST", remoteHost)
+				arg = strings.ReplaceAll(arg, "#SS_REMOTE_PORT", remotePort)
 				arg = strings.ReplaceAll(arg, "#SS_LOCAL_HOST", localHost)
 				arg = strings.ReplaceAll(arg, "#SS_LOCAL_PORT", localPort)
 				os.Args = append(os.Args, arg)
@@ -106,8 +112,8 @@ func init() {
 			}
 		}
 	} else {
-		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_HOST", os.Getenv("SS_REMOTE_HOST"))
-		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", os.Getenv("SS_REMOTE_PORT"))
+		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_HOST", remoteHost)
+		pluginOptions = strings.ReplaceAll(pluginOptions, "#SS_PORT", remotePort)
 
 		os.Args = append(os.Args, "-L")
 		os.Args = append(os.Args, fmt.Sprintf("ss+tcp://none@[%s]:%s", localHost, localPort))
