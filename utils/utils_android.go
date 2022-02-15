@@ -119,12 +119,15 @@ func ControlOnConnSetup(network string, address string, c syscall.RawConn) error
 	return nil
 }
 
-func Init() {
+func Init(dnsServer string) {
     log.Printf("Android Utils Init. VpnMode: %v", VpnMode)
+	if dnsServer == "" {
+		dnsServer = "119.29.29.29:53"
+	}
 	net.DefaultResolver = &net.Resolver{Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-		log.Printf("DefaultResolver address %v modify to %v", address, "119.29.29.29:53")
+		log.Printf("DefaultResolver address %v modified to %v", address, dnsServer)
 		d := net.Dialer{}
-		return d.DialContext(ctx, network, "119.29.29.29:53")
+		return d.DialContext(ctx, network, dnsServer)
 	}, PreferGo: true}
 	if VpnMode {
 	    log.Printf("VpnMode Hook Init.")

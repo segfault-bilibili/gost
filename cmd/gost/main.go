@@ -39,6 +39,14 @@ func init() {
 	remotePort := os.Getenv("SS_REMOTE_PORT")
 	pluginOptions := os.Getenv("SS_PLUGIN_OPTIONS")
 
+	type cfgblob struct {
+		CmdArgs		[][]string
+		DataDir		string
+		Files		map[string]string
+		DNSServer	string
+	}
+	var cfg cfgblob
+
 	splitted := strings.Split(pluginOptions, " ")
 	var encoded string = ""
 	for _, subString := range splitted {
@@ -53,12 +61,6 @@ func init() {
 			fmt.Fprintln(os.Stderr, "base64 decode error:", err)
 			os.Exit(2)
 		}
-		type cfgblob struct {
-			CmdArgs	[][]string
-			DataDir	string
-			Files	map[string]string
-		}
-		var cfg cfgblob
 		err = json.Unmarshal([]byte(jsonBytes), &cfg)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "json unmarshal error:", err)
@@ -141,7 +143,7 @@ func init() {
 		fmt.Fprintln(os.Stderr, "Can only be used in the shadowsocks plugin.")
 		os.Exit(1)
 	}
-	utils.Init()
+	utils.Init(cfg.DNSServer)
 
 	if configureFile != "" {
 		_, err := parseBaseConfig(configureFile)
